@@ -1,13 +1,40 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, desktopCapturer, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+let available_screens: Electron.DesktopCapturerSource[]
+let mainWindow: BrowserWindow
+
+function send_selected_screen(id: string) {
+  mainWindow.webContents.send('SET_SOURCE_ID', id)
+}
+
+function create_tray() {
+  const screens_menu = available_screens.map((screen) => ({
+    label: screen.name,
+    click: () => {
+      send_selected_screen(screen.id)
+    }
+  }))
+  const menu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [{ role: 'quit' }]
+    },
+    {
+      label: 'Screens',
+      submenu: screens_menu
+    }
+  ])
+  Menu.setApplicationMenu(menu)
+}
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -19,6 +46,18 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    desktopCapturer
+      .getSources({
+        types: ['screen']
+      })
+      .then((screens) => {
+        send_selected_screen(screens[0].id)
+        available_screens = screens
+        create_tray()
+        // for (const source of sources) {
+        //   mainWindow.webContents.send('SET_SOURCE_ID', source.id)
+        // }
+      })
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -51,6 +90,15 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  ipcMain.on('SET_SIZE', (_event, size) => {
+    const { height, width } = size
+    try {
+      mainWindow.setSize(height, width, true)
+    } catch (error) {
+      console.log({ error })
+    }
+  })
 
   createWindow()
 
