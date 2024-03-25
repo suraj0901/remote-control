@@ -9,6 +9,8 @@ export class PeerWrapper {
   remote_video_element: HTMLVideoElement
   call: MediaConnection | null = null
   chat: RTCDataChannel | undefined
+  #local_stream?: MediaStream | undefined
+  #remote_stream?: MediaStream | undefined
   on_error: (error: string) => void
   subscribe: (value: PeerWrapperState) => void
   on_end_call?: () => void
@@ -47,16 +49,12 @@ export class PeerWrapper {
   async start_call(id: string) {
     if (!id) return
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(this.#get_constraint())
+      this.#local_stream = await navigator.mediaDevices.getUserMedia(this.#get_constraint())
       this.update_state({ status: 'connecting' })
-      const connection = this.peer.call(id, stream)
-      this.call = connection
-      connection.on('stream', (stream) => {
-        console.log('stream recieved')
-        this.#handle_remote_stream(stream)
-      })
-      connection.on('error', this.#handle_error)
-      connection.on('close', this.stop_call)
+      this.call = this.peer.call(id, this.#local_stream)
+      this.call.on('stream', this.#handle_remote_stream)
+      this.call.on('error', this.#handle_error)
+      this.call.on('close', this.#stop_call)
     } catch (error: unknown) {
       console.log({ error })
       this.on_error((error as string).toString())
@@ -66,8 +64,8 @@ export class PeerWrapper {
   async answer_call() {
     if (!this.call) return
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(this.#get_constraint())
-      this.call.answer(stream)
+      this.#local_stream = await navigator.mediaDevices.getUserMedia(this.#get_constraint())
+      this.call.answer(this.#local_stream)
       this.call.on('stream', () => {
         if (!this.call?.peerConnection) return
         this.call.peerConnection.ondatachannel = ({ channel }) => {
@@ -75,23 +73,23 @@ export class PeerWrapper {
         }
       })
       this.call.on('error', this.#handle_error)
-      this.call.on('close', this.stop_call)
+      this.call.on('close', this.#stop_call)
     } catch (error) {
       console.log(error)
       this.on_error((error as string).toString())
     }
   }
 
-  stop_call() {
+  #stop_call() {
     if (!this.call) return
-    this.#stop_video(this.call?.localStream)
-    this.#stop_video(this.call?.remoteStream)
+    this.#stop_video(this.#local_stream)
+    this.#stop_video(this.#remote_stream)
     this?.on_end_call?.()
     this.update_state({ status: 'idle' })
     this.remote_video_element.srcObject = null
   }
 
-  #stop_video(stream: MediaStream) {
+  #stop_video(stream: MediaStream | undefined) {
     if (!stream) return
     const tracks = stream.getTracks()
     for (const track of tracks) {
@@ -100,11 +98,12 @@ export class PeerWrapper {
   }
 
   #handle_error(error: PeerError<'negotiation-failed' | 'connection-closed'>) {
-    this.stop_call()
+    this.#stop_call()
     this.on_error(error.message)
   }
 
   #handle_remote_stream(remote_stream: MediaStream) {
+    this.#remote_stream = remote_stream
     this.update_state({ status: 'connected' })
     this.remote_video_element.srcObject = remote_stream
     this.remote_video_element.onloadedmetadata = async () => {
