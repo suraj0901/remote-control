@@ -1,6 +1,6 @@
-import { Button } from './components/ui/button'
+import { Button } from './ui/button'
 import { CopyIcon } from '@radix-ui/react-icons'
-import { useToast } from './components/ui/use-toast'
+import { useToast } from './ui/use-toast'
 
 interface Prop {
   peerState?: {
@@ -10,7 +10,7 @@ interface Prop {
 
 export function DisplayCopyId({ peerState }: Prop) {
   const { toast } = useToast()
-  console.log({ peerState })
+  // console.log({ peerState })
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(peerState?.id ?? '')
