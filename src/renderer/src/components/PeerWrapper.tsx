@@ -1,4 +1,7 @@
 import Peer, { MediaConnection, PeerError } from 'peerjs'
+import { Chat } from './Chat'
+
+const CHAT_LABEL = 'chat'
 
 export class PeerWrapper {
   peer: Peer
@@ -8,7 +11,7 @@ export class PeerWrapper {
   }
   remote_video_element: HTMLVideoElement
   call: MediaConnection | null = null
-  chat: RTCDataChannel | undefined
+  chat = new Chat()
   local_stream?: MediaStream | undefined
   remote_stream?: MediaStream | undefined
   on_error: (error: string) => void
@@ -55,7 +58,7 @@ export class PeerWrapper {
       this.call.on('error', this.#handle_error)
       this.call.on('close', this.#stop_call)
     } catch (error: unknown) {
-      // console.log({ error })
+      console.log({ error })
       this.on_error((error as string).toString())
     }
   }
@@ -69,8 +72,8 @@ export class PeerWrapper {
         if (!this.call?.peerConnection) return
         this.call.peerConnection.ondatachannel = ({ channel }) => {
           if (channel.label === CHAT_LABEL) {
-            this.chat = channel
-            this.chat.onclose = this.#stop_call
+            this.chat.add_channel(channel)
+            channel.onclose = this.#stop_call
           }
         }
       })
@@ -78,7 +81,7 @@ export class PeerWrapper {
       this.call.on('close', this.#stop_call)
       this.call.answer(this.local_stream)
     } catch (error) {
-      console.log(error)
+      console.log({ error })
       this.on_error((error as string).toString())
     }
   }
@@ -115,7 +118,8 @@ export class PeerWrapper {
       await this.remote_video_element.play()
     }
     if (!this.call) return
-    this.chat = this.call.peerConnection.createDataChannel(CHAT_LABEL)
+    const channel = this.call.peerConnection.createDataChannel(CHAT_LABEL)
+    this.chat.add_channel(channel)
   }
 
   #get_constraint = () => {
@@ -135,10 +139,4 @@ export class PeerWrapper {
 
     return constraint
   }
-}
-
-const CHAT_LABEL = 'chat'
-export interface PeerWrapperState {
-  id: string
-  status: 'idle' | 'connecting' | 'connected' | 'incomming'
 }

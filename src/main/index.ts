@@ -1,7 +1,8 @@
-import { app, shell, BrowserWindow, desktopCapturer, ipcMain, Menu } from 'electron'
+import { app, shell, BrowserWindow, desktopCapturer, ipcMain, Menu, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { mouse, straightTo } from '@nut-tree/nut-js'
 
 let available_screens: Electron.DesktopCapturerSource[]
 let mainWindow: BrowserWindow
@@ -98,6 +99,15 @@ app.whenReady().then(() => {
     } catch (error) {
       console.log({ error })
     }
+  })
+
+  ipcMain.on('MOUSE_MOVE', (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {
+    const {
+      size: { height, width }
+    } = screen.getPrimaryDisplay()
+    const ratioX = width / clientWidth
+    const ratioY = height / clientHeight
+    mouse.move(straightTo({ x: clientX * ratioX, y: clientY * ratioY }))
   })
 
   createWindow()

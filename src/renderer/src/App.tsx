@@ -7,10 +7,7 @@ import { Alert, AlertTitle } from './components/ui/alert'
 import { ScrollArea } from './components/ui/scroll-area'
 import { Separator } from './components/ui/separator'
 import { usePeer } from './hooks/usePeer'
-
-export interface PeerState {
-  id: string
-}
+import { MessageType } from './components/Chat'
 
 function App(): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -18,6 +15,22 @@ function App(): JSX.Element {
 
   const handleFormSubmit = (id: string) => {
     peer?.start_call(id)
+  }
+
+  const handle_mouse_move = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const { clientX, clientY } = e
+    const clientWidth = window.innerWidth
+    const clientHeight = window.innerHeight
+    peer?.chat.send_event(MessageType.mouse_move, { clientX, clientY, clientHeight, clientWidth })
+  }
+
+  // const handle_mouse_click = () => {
+  //   peer?.chat.send_event(MessageType.mouse_click, {})
+  // }
+
+  const handle_key_down = (e) => {
+    console.log({ keyCode: e.code })
+    // peer?.chat.send_event(MessageType.keyboard_input, {})
   }
 
   return (
@@ -38,9 +51,16 @@ function App(): JSX.Element {
           <AlertTitle className="font-bold">Connecting...</AlertTitle>
         </Alert>
       )}
-      <video ref={videoRef} muted className="w-full aspect-video">
-        Video not available
-      </video>
+
+      <div
+        onMouseMove={handle_mouse_move}
+        // onClick={handle_mouse_click}
+        onKeyDown={handle_key_down}
+      >
+        <video ref={videoRef} muted className="w-full aspect-video">
+          Video not available
+        </video>
+      </div>
     </ScrollArea>
   )
 }

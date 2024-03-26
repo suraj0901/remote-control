@@ -1,50 +1,19 @@
+import { useSyncExternalStore } from 'react'
 import { PeerWrapper } from '../PeerWrapper'
-import { useEffect, useState } from 'react'
-
-interface Message {
-  time_stamp: number
-  message: string
-  is_self: boolean
-  is_read: boolean
-}
+import { MessageType } from '../Chat'
 
 export function useMessage({ peer }: { peer: PeerWrapper }) {
-  const [message_list, set_message_list] = useState<Message[]>([])
-
-  useEffect(() => {
-    if (!peer.chat) return
-    peer.chat.onmessage = (event) => {
-      const data = event.data as string
-      // console.log('message recieved', data)
-      const { type, time_stamp, message } = JSON.parse(data)
-      if (type === 'message') {
-        set_message_list((prev) => [
-          ...prev,
-          {
-            time_stamp,
-            message,
-            is_self: false,
-            is_read: false
-          }
-        ])
-      }
-    }
-  }, [])
+  const message_list = useSyncExternalStore(peer.chat.subscribe, peer.chat.get_message)
 
   const send_message = (message: string) => {
-    const payload = {
-      message,
-      time_stamp: Date.now()
-    }
-    set_message_list((prev) => [
-      ...prev,
-      {
-        ...payload,
-        is_self: true,
-        is_read: true
-      }
-    ])
-    peer.chat?.send(JSON.stringify({ ...payload, type: 'message' }))
+    peer.chat?.send_message(message)
   }
+
+  peer.chat.on_input_events = ({ type, payload }) => {
+    if (type === MessageType.mouse_move) {
+      window.electron.ipcRenderer.send('MOUSE_MOVE', payload)
+    }
+  }
+
   return { message_list, send_message }
 }

@@ -1,10 +1,10 @@
 import { PaperPlaneIcon } from '@radix-ui/react-icons'
+import { FieldValues, useForm } from 'react-hook-form'
 import { Button } from '../ui/button'
 import { Form, FormField, FormItem, FormMessage } from '../ui/form'
-import { FieldValues, useForm } from 'react-hook-form'
 import { Textarea } from '../ui/textarea'
 
-export interface ChatFormProp {
+interface ChatFormProp {
   sendMessage: (message: string) => void
 }
 
@@ -13,6 +13,9 @@ export function ChatForm({ sendMessage }: ChatFormProp) {
   const onSubmit = (data: FieldValues) => {
     const message = data.chat
     sendMessage(message)
+    form.reset({
+      chat: ''
+    })
   }
   return (
     <div className="before:bg-gradient-to-t from-black to-transparent before:absolute before:-top-11 before:left-0 before:right-0 before:h-10 before:content-[' '] relative">
@@ -26,7 +29,7 @@ export function ChatForm({ sendMessage }: ChatFormProp) {
                 <FormItem>
                   <Textarea
                     placeholder="Enter message"
-                    className="min-h-6 max-h-[200px] scroll-bar resize-none"
+                    className="min-h-6  scroll-bar resize-none"
                     onInput={(e) => {
                       const textArea = e.currentTarget
                       textArea.style.height = 'auto'
@@ -39,7 +42,7 @@ export function ChatForm({ sendMessage }: ChatFormProp) {
               )}
             />
           </section>
-          <Button type="submit" size="icon">
+          <Button disabled={!!form.formState.errors.chat} type="submit" size="icon">
             <PaperPlaneIcon />
           </Button>
         </form>

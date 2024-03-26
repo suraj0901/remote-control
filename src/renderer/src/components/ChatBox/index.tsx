@@ -24,13 +24,17 @@ function ChatBox({ peer }: { peer: PeerWrapper }) {
         </SheetHeader>
         <div className="flex flex-col h-full gap-1 pb-4">
           <ScrollArea className="flex-1">
-            {message_list.map((message) => (
+            {message_list?.map((message) => (
               <div
                 key={message.time_stamp}
-                className="flex max-w-[280px] my-1 bg-gray-600/30 px-2 rounded items-baseline justify-between"
+                data-isself={message.is_self}
+                className="flex data-[isself=true]:justify-end my-1 w-full"
               >
-                <p>{message.message}</p>
-                <p className="text-xs">{RelativeTime(message.time_stamp)}</p>
+                <div className="flex max-w-[280px] gap-x-4 bg-gray-600/30 px-2 rounded items-baseline justify-between">
+                  {/* {console.log({ isSelf: message.is_self })} */}
+                  <p>{message.message}</p>
+                  <p className="text-[10px]">{RelativeTime(message.time_stamp)}</p>
+                </div>
               </div>
             ))}
           </ScrollArea>
