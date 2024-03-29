@@ -1,5 +1,5 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
-import { mouse, straightTo, keyboard, Key, Point } from '@nut-tree/nut-js'
+import { Key, Point, keyboard, mouse } from '@nut-tree/nut-js'
 import { BrowserWindow, Menu, app, desktopCapturer, ipcMain, screen, shell } from 'electron'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -58,7 +58,7 @@ function createWindow(): void {
     mainWindow.show()
     desktopCapturer
       .getSources({
-        types: ['window']
+        types: ['screen']
       })
       .then((screens) => {
         send_selected_screen(screens[0])
@@ -111,7 +111,7 @@ app.whenReady().then(() => {
     keyboard.pressKey(keyboard_input)
   })
 
-  ipcMain.on('MOUSE_CLICK', async (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {
+  ipcMain.on('MOUSE_CLICK', () => {
     // const { height, width } = selected_screeen
     // const ratioX = width / clientWidth
     // const ratioY = height / clientHeight
@@ -119,7 +119,7 @@ app.whenReady().then(() => {
     // const y = clientY * ratioY
     // console.log('mouse click')
     // mouse.setPosition(new Point(x, y))
-    await mouse.leftClick()
+    mouse.leftClick()
   })
 
   ipcMain.on('MOUSE_MOVE', (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {

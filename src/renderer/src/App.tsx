@@ -1,14 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
+import { MessageType } from './components/Chat'
 import ChatBox from './components/ChatBox'
 import { DisplayCopyId } from './components/DisplayCopyId'
 import EndCall from './components/EndCall'
 import PeerIdInput from './components/PeerIdInput'
 import { Alert, AlertTitle } from './components/ui/alert'
-import { ScrollArea } from './components/ui/scroll-area'
 import { Separator } from './components/ui/separator'
 import { usePeer } from './hooks/usePeer'
-import { MessageType } from './components/Chat'
-import { Key } from '@nut-tree/nut-js'
 
 function App(): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
