@@ -1,21 +1,28 @@
-import { app, shell, BrowserWindow, desktopCapturer, ipcMain, Menu, screen } from 'electron'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import { mouse, straightTo, keyboard, Key, Point } from '@nut-tree/nut-js'
+import { BrowserWindow, Menu, app, desktopCapturer, ipcMain, screen, shell } from 'electron'
 import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { mouse, straightTo } from '@nut-tree/nut-js'
 
 let available_screens: Electron.DesktopCapturerSource[]
 let mainWindow: BrowserWindow
+let displays: Electron.Display[]
+let selected_screeen: Electron.Size
 
-function send_selected_screen(id: string) {
-  mainWindow.webContents.send('SET_SOURCE_ID', id)
+function send_selected_screen(screen: Electron.DesktopCapturerSource) {
+  selected_screeen =
+    displays.find((display) => `${display.id}` === screen.display_id)?.size ?? displays[0].size
+  mainWindow.webContents.send('SET_SOURCE_ID', {
+    id: screen.id,
+    selected_screeen
+  })
 }
 
 function create_tray() {
   const screens_menu = available_screens.map((screen) => ({
     label: screen.name,
     click: () => {
-      send_selected_screen(screen.id)
+      send_selected_screen(screen)
     }
   }))
   const menu = Menu.buildFromTemplate([
@@ -46,18 +53,17 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    displays = screen.getAllDisplays()
+    mainWindow.webContents.openDevTools()
     mainWindow.show()
     desktopCapturer
       .getSources({
-        types: ['screen']
+        types: ['window']
       })
       .then((screens) => {
-        send_selected_screen(screens[0].id)
+        send_selected_screen(screens[0])
         available_screens = screens
         create_tray()
-        // for (const source of sources) {
-        //   mainWindow.webContents.send('SET_SOURCE_ID', source.id)
-        // }
       })
   })
 
@@ -101,13 +107,29 @@ app.whenReady().then(() => {
     }
   })
 
+  ipcMain.on('KEYBOARD_INPUT', (_e, keyboard_input: Key) => {
+    keyboard.pressKey(keyboard_input)
+  })
+
+  ipcMain.on('MOUSE_CLICK', async (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {
+    // const { height, width } = selected_screeen
+    // const ratioX = width / clientWidth
+    // const ratioY = height / clientHeight
+    // const x = clientX * ratioX
+    // const y = clientY * ratioY
+    // console.log('mouse click')
+    // mouse.setPosition(new Point(x, y))
+    await mouse.leftClick()
+  })
+
   ipcMain.on('MOUSE_MOVE', (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {
-    const {
-      size: { height, width }
-    } = screen.getPrimaryDisplay()
+    const { height, width } = selected_screeen
     const ratioX = width / clientWidth
     const ratioY = height / clientHeight
-    mouse.move(straightTo({ x: clientX * ratioX, y: clientY * ratioY }))
+    const x = clientX * ratioX
+    const y = clientY * ratioY
+    console.log({ x, y })
+    mouse.setPosition(new Point(x, y))
   })
 
   createWindow()

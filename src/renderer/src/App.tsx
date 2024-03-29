@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import ChatBox from './components/ChatBox'
 import { DisplayCopyId } from './components/DisplayCopyId'
 import EndCall from './components/EndCall'
@@ -8,33 +8,48 @@ import { ScrollArea } from './components/ui/scroll-area'
 import { Separator } from './components/ui/separator'
 import { usePeer } from './hooks/usePeer'
 import { MessageType } from './components/Chat'
+import { Key } from '@nut-tree/nut-js'
 
 function App(): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
   const { state, peer } = usePeer(videoRef)
+  const ref = useRef<NodeJS.Timeout>()
 
   const handleFormSubmit = (id: string) => {
     peer?.start_call(id)
   }
 
   const handle_mouse_move = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (!peer?.chat.can_send_event) return
     const { clientX, clientY } = e
     const clientWidth = window.innerWidth
     const clientHeight = window.innerHeight
-    peer?.chat.send_event(MessageType.mouse_move, { clientX, clientY, clientHeight, clientWidth })
+    const payload = {
+      clientX,
+      clientY,
+      clientHeight,
+      clientWidth
+    }
+    if (ref.current) {
+      clearTimeout(ref.current)
+    }
+    ref.current = setTimeout(() => {
+      peer?.chat.send_event(MessageType.mouse_move, payload)
+    }, 300)
   }
 
-  // const handle_mouse_click = () => {
-  //   peer?.chat.send_event(MessageType.mouse_click, {})
-  // }
-
-  const handle_key_down = (e) => {
-    console.log({ keyCode: e.code })
-    // peer?.chat.send_event(MessageType.keyboard_input, {})
+  const handle_mouse_click = () => {
+    peer?.chat.send_event(MessageType.mouse_click, {})
   }
+
+  // useEffect(() => {
+  //   window.onkeyup = (e: KeyboardEvent) => {
+  //     // peer?.chat.send_event(MessageType.keyboard_input, {})
+  //   }
+  // }, [])
 
   return (
-    <ScrollArea className="p-2 h-svh w-svw">
+    <div className="p-2 h-svh w-svw flex flex-col">
       <div className="flex justify-between items-center px-4">
         <DisplayCopyId peerState={state} />
         {state?.status === 'connected' && (
@@ -53,15 +68,15 @@ function App(): JSX.Element {
       )}
 
       <div
+        className="h-full mx-auto"
         onMouseMove={handle_mouse_move}
-        // onClick={handle_mouse_click}
-        onKeyDown={handle_key_down}
+        onMouseUp={handle_mouse_click}
       >
-        <video ref={videoRef} muted className="w-full aspect-video">
+        <video ref={videoRef} muted className="h-full mx-auto aspect-video">
           Video not available
         </video>
       </div>
-    </ScrollArea>
+    </div>
   )
 }
 

@@ -120,17 +120,18 @@ export class PeerWrapper {
     if (!this.call) return
     const channel = this.call.peerConnection.createDataChannel(CHAT_LABEL)
     this.chat.add_channel(channel)
+    this.chat.can_send_event = true
   }
 
   #get_constraint = () => {
     const constraint = (
-      window.screenId
+      window.selected_screen
         ? {
             audio: false,
             video: {
               mandatory: {
                 chromeMediaSource: 'desktop',
-                chromeMediaSourceId: window.screenId
+                chromeMediaSourceId: window.selected_screen.id
               }
             }
           }

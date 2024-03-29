@@ -1,6 +1,7 @@
+import { MessageType } from '@/components/Chat'
 import { RefObject, useEffect, useRef, useState } from 'react'
+import { PeerWrapper } from '../components/PeerWrapper'
 import { useToast } from '../components/ui/use-toast'
-import { PeerWrapper, PeerWrapperState } from '../components/PeerWrapper'
 
 export function usePeer(videoRef: RefObject<HTMLVideoElement>) {
   const { toast } = useToast()
@@ -26,8 +27,21 @@ export function usePeer(videoRef: RefObject<HTMLVideoElement>) {
       })
     }
 
-    window?.api?.getScreenId?.((_event, screenId) => {
-      window.screenId = screenId
+    peer.current.chat.on_input_events = ({ type, payload }) => {
+      if (type === MessageType.mouse_move) {
+        // console.log({ payload })
+        window.electron.ipcRenderer.send('MOUSE_MOVE', payload)
+      } else if (type === MessageType.mouse_click) {
+        console.log(MessageType.mouse_click, 'hmmm....')
+        window.electron.ipcRenderer.send('MOUSE_CLICK', payload)
+      } else if (type === MessageType.keyboard_input) {
+        window.electron.ipcRenderer.send('KEYBOARD_INPUT', payload)
+      }
+    }
+
+    window?.api?.getScreenId?.((_event, screen) => {
+      console.log({ screen })
+      window.selected_screen = screen
     })
 
     return () => {

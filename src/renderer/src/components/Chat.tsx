@@ -10,6 +10,7 @@ export class Chat {
   #message_list?: Message[]
   #subscribers = new Set<() => void>()
   on_input_events?: (data: { type: MessageType; payload: unknown[] }) => void
+  can_send_event?: boolean = false
 
   get_message = () => {
     return this.#message_list
