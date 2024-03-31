@@ -10,8 +10,6 @@ let displays: Electron.Display[]
 let selected_screeen: Electron.Size
 
 function send_selected_screen(screen: Electron.DesktopCapturerSource) {
-  selected_screeen =
-    displays.find((display) => `${display.id}` === screen.display_id)?.size ?? displays[0].size
   mainWindow.webContents.send('SET_SOURCE_ID', {
     id: screen.id,
     selected_screeen
@@ -123,7 +121,9 @@ app.whenReady().then(() => {
   })
 
   ipcMain.on('MOUSE_MOVE', (_e, { clientX, clientY, clientHeight, clientWidth }: any) => {
-    const { height, width } = selected_screeen
+    const {
+      size: { height, width }
+    } = screen.getAllDisplays()[0]
     const ratioX = width / clientWidth
     const ratioY = height / clientHeight
     const x = clientX * ratioX
